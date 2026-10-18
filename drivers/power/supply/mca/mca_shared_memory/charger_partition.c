@@ -1274,6 +1274,33 @@ static void charger_partition_work(struct work_struct *work)
 	}
 }
 
+static int charger_partition_poweroff_notify(struct notifier_block *nb,
+					     unsigned long event, void *data)
+{
+	charger_partition_info_1 info = {
+		.power_off_mode = 1,
+		.zero_speed_mode = 2,
+		.mishow = 0x34567890,
+		.reserved = 0,
+	};
+
+	if (event != SYS_POWER_OFF)
+		return NOTIFY_DONE;
+	if (!charger_partition || !charger_partition->is_charger_partition_rdy)
+		return NOTIFY_DONE;
+
+	if (charger_partition_write_info_1(&info) < 0)
+		mca_log_err("poweroff: failed to set power_off_mode\n");
+	else
+		mca_log_err("poweroff: power_off_mode set to 1\n");
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block charger_partition_reboot_nb = {
+	.notifier_call = charger_partition_poweroff_notify,
+};
+
 static int charger_partition_probe(struct platform_device *pdev)
 {
 	charger_partition = devm_kzalloc(
@@ -1291,12 +1318,14 @@ static int charger_partition_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&charger_partition->charger_partition_work,
 			  charger_partition_work);
 	schedule_delayed_work(&charger_partition->charger_partition_work, 0);
+	register_reboot_notifier(&charger_partition_reboot_nb);
 	mca_log_err("probe ok\n");
 	return 0;
 }
 
 static int charger_partition_remove(struct platform_device *pdev)
 {
+	unregister_reboot_notifier(&charger_partition_reboot_nb);
 	cancel_delayed_work(&charger_partition->charger_partition_work);
 	charger_partition_sysfs_remove_group(&pdev->dev);
 	kfree(charger_partition);
