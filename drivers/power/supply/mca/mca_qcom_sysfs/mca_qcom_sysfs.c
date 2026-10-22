@@ -24,11 +24,17 @@ struct mca_qcom_sysfs_dev {
 	bool support_multi_typec;
 };
 
-/* Indexed by the adapter type returned from protocol_class_get_adapter_type(). */
+/*
+ * Indexed by the adapter type returned from protocol_class_get_adapter_type().
+ * The names follow the stock qcom-battery real_type node: batterysecret only
+ * starts the Xiaomi adapter verification when it reads "USB_PD", and an
+ * unverified adapter never leaves the buck path.
+ */
 static const char *const power_supply_usb_type_text[] = {
-	"Unknown", "SDP",	"CDP",	     "DCP", "USB_FLOAT", "HVDCP",
-	"HVDCP_3", "HVDCP_3_B", "HVDCP_3P5", "C",   "PD",	 "PD_PPS",
-	"PD_PPS",  "Unknown",	"ACA",	     "DCP",
+	"Unknown",     "USB",	      "USB_CDP",	 "USB_DCP",
+	"USB_FLOAT",   "USB_HVDCP",   "USB_HVDCP_3",	 "USB_HVDCP_3",
+	"USB_HVDCP_3", "USB_C",	      "USB_PD",		 "PD_PPS",
+	"PD_PPS",      "Unknown",     "USB_ACA",	 "USB_DCP",
 };
 
 /* Indexed by strategy_class_wireless_ops_get_wls_type() (xm_wls_charger_type). */
